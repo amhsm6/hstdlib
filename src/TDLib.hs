@@ -88,6 +88,5 @@ exec x@(AuthorizationStateWaitCode _) = do
 exec x = do
     liftIO $ putStrLn $ concat [ "Unknown Authorization State:\n"
                                , show x
-                               , "\n --> Skipping"
                                ]
     mzero
