@@ -13,10 +13,10 @@ import Control.Lens
 import Control.Concurrent
 import Control.Concurrent.STM
 import Data.Text.Lens
-import Data.Aeson
+import Data.Aeson (ToJSON)
 import System.Environment
 import qualified TD.Lib as TDL
-import TD.GeneralResult hiding (Text)
+import TD.GeneralResult
 import TD.Data.Update
 import TD.Data.AuthorizationState
 import TD.Query.SetTdlibParameters
@@ -65,28 +65,23 @@ exec AuthorizationStateReady = pure ()
 exec AuthorizationStateWaitTdlibParameters = do
     apiId <- liftIO $ getEnv "API_ID"
     apiHash <- liftIO $ getEnv "API_HASH"
-    send $ defaultSetTdlibParameters { database_directory = Just $ Text "db"
+    send $ defaultSetTdlibParameters { database_directory = Just $ "db" ^. packed
                                      , api_id = Just $ read apiId
                                      , api_hash = Just $ apiHash ^. packed
-                                     , device_model = Just $ Text "Haskell"
-                                     , system_language_code = Just $ Text "en"
-                                     , application_version = Just $ Text "1.0.0"
+                                     , device_model = Just $ "Haskell" ^. packed
+                                     , system_language_code = Just $ "en" ^. packed
+                                     , application_version = Just $ "1.0.0" ^. packed
                                      }
 
 exec AuthorizationStateWaitPhoneNumber = do
     phone <- liftIO $ getEnv "PHONE_NUMBER"
     send $ defaultSetAuthenticationPhoneNumber { phone_number = Just $ phone ^. packed }
 
-exec x@(AuthorizationStateWaitCode _) = do
+exec (AuthorizationStateWaitCode _) = do
     liftIO $ putStrLn "Type authentication code"
-
     code <- liftIO $ getLine
-    when (null code) $ liftIO (putStrLn "Wrong code") >> exec x
-
     send $ CheckAuthenticationCode { code = Just $ code ^. packed }
 
 exec x = do
-    liftIO $ putStrLn $ concat [ "Unknown Authorization State:\n"
-                               , show x
-                               ]
+    liftIO $ putStrLn $ "Unknown Authorization State:\n" ++ show x
     mzero
